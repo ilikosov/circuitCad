@@ -1,0 +1,15 @@
+{
+    "diagnostics.globals": [
+        "serpent",
+        "__Profiler",
+        "storage",
+        "log",
+        "data",
+        "procinfos",
+        "require"
+    ],
+    "diagnostics.disable": [
+        "missing-fields"
+    ],
+    "workspace.checkThirdParty": false
+}
