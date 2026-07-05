@@ -1,0 +1,59 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read mod name and version
+        id: mod
+        run: |
+          python3 -c "import json; i = json.load(open('info.json')); print(f\"name={i['name']}\nversion={i['version']}\")" >> "$GITHUB_OUTPUT"
+
+      - name: Check whether the tag already exists
+        id: tag
+        run: |
+          if git ls-remote --exit-code --tags origin "refs/tags/v${{ steps.mod.outputs.version }}" >/dev/null; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Tag v${{ steps.mod.outputs.version }} already exists, skipping release."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build mod zip
+        if: steps.tag.outputs.exists == 'false'
+        run: ./package.sh
+
+      - name: Extract changelog section
+        if: steps.tag.outputs.exists == 'false'
+        run: |
+          python3 - "${{ steps.mod.outputs.version }}" > release-notes.md <<'EOF'
+          import re, sys
+          version = sys.argv[1]
+          text = open("changelog.txt", encoding="utf-8").read()
+          for block in re.split(r"^-{99}\n", text, flags=re.M):
+              m = re.match(r"Version:\s*(\S+)\s*\n", block)
+              if m and m.group(1) == version:
+                  print(block.rstrip())
+                  break
+          EOF
+          cat release-notes.md
+
+      - name: Create tag and release
+        if: steps.tag.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "v${{ steps.mod.outputs.version }}" \
+            dist/${{ steps.mod.outputs.name }}_${{ steps.mod.outputs.version }}.zip \
+            --title "${{ steps.mod.outputs.version }}" \
+            --notes-file release-notes.md \
+            --target "$GITHUB_SHA"
