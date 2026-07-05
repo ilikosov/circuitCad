@@ -78,7 +78,11 @@ Other: `graphics/`, `locale/en/base.cfg` + `locale/ru/base.cfg`,
   of claiming a change is tested.
 - **Release:** bump `version` in `info.json`, add a `changelog.txt` entry
   (strict Factorio changelog format: 99-dash separator line,
-  `Version:`/`Date:`, two-space indented categories), then `./package.sh`
-  → `dist/compaktcircuit_<version>.zip`.
+  `Version:`/`Date:`, two-space indented categories), merge to `main`.
+  CI (`.github/workflows/release.yml`) then tags the commit `v<version>`
+  and publishes a GitHub release with the built zip; release notes are the
+  version's `changelog.txt` section. The job is idempotent — it skips when
+  the tag already exists. `./package.sh` stays for local builds
+  (→ `dist/compaktcircuit_<version>.zip`).
 - Multiplayer safety: control-stage code must stay deterministic; never key
   behavior off `game.player`, avoid non-serializable values in `storage`.
